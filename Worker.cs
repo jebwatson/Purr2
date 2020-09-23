@@ -1,3 +1,4 @@
+using System.Text;
 using System.Net.Http;
 using System;
 using System.Threading;
@@ -30,13 +31,17 @@ namespace purr2
                 // Get all devices exposed by the maker api
                 string devicesQueryResponseBody = await client.GetStringAsync("http://192.168.1.115/apps/api/2/devices?access_token=f6bb25f0-65f9-4413-ac03-6ed43628b5b3");
                 var devices = JsonConvert.DeserializeObject<List<Device>>(devicesQueryResponseBody);
+                var sb = new StringBuilder();
 
-                /* foreach (var device in devices)
+                foreach (var device in devices)
                 {
-                    this.logger.LogInformation(device.ToString());
-                } */
+                    IoHelper.PrintProperties(device, sb);
+                    // this.logger.LogInformation(device.ToString());
+                }
 
-                var device = devices.FirstOrDefault(d => d.Id == 2);
+                this.logger.LogInformation(sb.ToString());
+
+                /* var device = devices.FirstOrDefault(d => d.Id == 2);
                 IoHelper.PrintProperties(device, this.logger);
                 string deviceEventsQueryResponse = await client.GetStringAsync($"http://192.168.1.115/apps/api/2/devices/{device?.Id}/events?access_token=f6bb25f0-65f9-4413-ac03-6ed43628b5b3");
                 var deviceEvents = JsonConvert.DeserializeObject<List<DeviceEvent>>(deviceEventsQueryResponse);
@@ -44,7 +49,7 @@ namespace purr2
                 foreach (var deviceEvent in deviceEvents)
                 {
                     IoHelper.PrintProperties(deviceEvent, this.logger);
-                }
+                } */
             }
             catch (System.Exception e)
             {
@@ -64,17 +69,26 @@ namespace purr2
             /// Prints all properties of the target object using the provided logger.
             /// </summary>
             /// <param name="target">The target object.</param>
-            /// <param name="logger">The logger for printing the properties.</param>
-            public static void PrintProperties(object target, ILogger logger)
+            /// <param name="stringBuilder">The string builder for printing the properties.</param>
+            public static void PrintProperties(object target, StringBuilder stringBuilder)
             {
-                foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(target))
+                var sb = new StringBuilder();
+                var properties = target.GetType().GetProperties();
+
+                foreach (var property in properties)
                 {
-                    var name = descriptor.Name;
-                    var value = descriptor.GetValue(target);
-                    logger.LogInformation(string.Concat(name, "=", value));
+                    var value = property.GetValue(target);
+
+                    if (property.Name == "Id") {
+                        stringBuilder.Append(property.Name + ": " + value.ToString() + ", ");
+                    }
+                    else if (property.Name == "Name") {
+                        stringBuilder.Append(property.Name + ": " + value.ToString());
+                    }
+                    
                 }
 
-                logger.LogInformation("\n");
+                stringBuilder.Append("\n");
             }
         }
 
